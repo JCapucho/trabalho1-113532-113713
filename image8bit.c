@@ -321,14 +321,15 @@ int ImageMaxval(Image img) { ///
 void ImageStats(Image img, uint8 *min, uint8 *max) { ///
   assert(img != NULL);
   int lastPixel = img->width * img->height;
-  *min = img->pixel[0];
-  *max = img->pixel[0];
+  *min = *max = img->pixel[0];
   for (int i = 1; i < lastPixel; i++) {
-    if (img->pixel[i] > *max) {
-      *max = img->pixel[i];
+    PIXMEM += 1; // count one pixel access (read)
+    const uint8 level = img->pixel[i];
+    if (level > *max) {
+      *max = level;
     }
-    if (img->pixel[i] < *min) {
-      *min = img->pixel[i];
+    if (level < *min) {
+      *min = level;
     }
   }
 }
@@ -367,6 +368,13 @@ static inline int G(Image img, int x, int y) {
   return index;
 }
 
+/// Clamps the value to be between min and max
+/// This is an internal function.
+static int clamp(int val, int min, int max) {
+  const int t = val < min ? min : val;
+  return t > max ? max : t;
+}
+
 /// Get the pixel (level) at position (x,y).
 uint8 ImageGetPixel(Image img, int x, int y) { ///
   assert(img != NULL);
@@ -397,6 +405,7 @@ void ImageNegative(Image img) { ///
   assert(img != NULL);
   const size_t pixels = img->width * img->height;
   for (size_t i = 0; i < pixels; i++) {
+    PIXMEM += 2; // count two pixels accesses (1 read and 1 write)
     img->pixel[i] = img->maxval - img->pixel[i];
   }
 }
@@ -408,6 +417,7 @@ void ImageThreshold(Image img, uint8 thr) { ///
   assert(img != NULL);
   const size_t pixels = img->width * img->height;
   for (size_t i = 0; i < pixels; i++) {
+    PIXMEM += 2; // count two pixels accesses (1 read and 1 write)
     const int current_value = img->pixel[i];
     img->pixel[i] = current_value >= thr ? img->maxval : 0;
   }
@@ -423,10 +433,11 @@ void ImageBrighten(Image img, double factor) { ///
   // TODO: ^^^^^ ?
   const size_t pixels = img->width * img->height;
   for (size_t i = 0; i < pixels; i++) {
+    PIXMEM += 2; // count two pixels accesses (1 read and 1 write)
     const int current_value = img->pixel[i];
     // Add +0.5 for rounding
     const int updated_value = (int)((double)current_value * factor + 0.5);
-    img->pixel[i] = updated_value >= img->maxval ? img->maxval : updated_value;
+    img->pixel[i] = clamp(updated_value, 0, img->maxval);
   }
 }
 
@@ -461,8 +472,10 @@ Image ImageRotate(Image img) { ///
 
   for (int x = 0; x < img->width; x++) {
     for (int y = 0; y < img->height; y++) {
-      new_img->pixel[(new_img->height - x - 1) * new_img->height + y] =
-          img->pixel[y * img->height + x];
+      const int new_x = y;
+      const int new_y = new_img->height - x - 1;
+      const uint8 level = ImageGetPixel(img, x, y);
+      ImageSetPixel(new_img, new_x, new_y, level);
     }
   }
 
@@ -476,7 +489,7 @@ Image ImageRotate(Image img) { ///
 /// On success, a new image is returned.
 /// (The caller is responsible for destroying the returned image!)
 /// On failure, returns NULL and errno/errCause are set accordingly.
-Image ImageMirror(Image img) { ///
+Image ImageMirror(Image img) {
   assert(img != NULL);
 
   const Image new_img = ImageCreate(img->width, img->height, img->maxval);
@@ -485,8 +498,8 @@ Image ImageMirror(Image img) { ///
 
   for (int x = 0; x < img->width; x++) {
     for (int y = 0; y < img->height; y++) {
-      new_img->pixel[y * img->height + (img->width - x - 1)] =
-          img->pixel[y * img->height + x];
+      const uint8 level = ImageGetPixel(img, x, y);
+      ImageSetPixel(new_img, img->width - x - 1, y, level);
     }
   }
 
@@ -515,8 +528,8 @@ Image ImageCrop(Image img, int x, int y, int w, int h) { ///
 
   for (int new_x = 0; new_x < w; new_x++) {
     for (int new_y = 0; new_y < h; new_y++) {
-      new_img->pixel[new_y * w + new_x] =
-          img->pixel[(new_y + y) * img->width + (new_x + x)];
+      const uint8 level = ImageGetPixel(img, new_x + x, new_y + y);
+      ImageSetPixel(new_img, new_x, new_y, level);
     }
   }
 
@@ -536,8 +549,8 @@ void ImagePaste(Image img1, int x, int y, Image img2) { ///
 
   for (int new_x = 0; new_x < img2->width; new_x++) {
     for (int new_y = 0; new_y < img2->height; new_y++) {
-      img1->pixel[(new_y + y) * img1->width + (new_x + x)] =
-          img2->pixel[new_y * img2->width + new_x];
+      const uint8 level = ImageGetPixel(img2, new_x, new_y);
+      ImageSetPixel(img1, new_x + x, new_y + y, level);
     }
   }
 }
@@ -555,21 +568,18 @@ void ImageBlend(Image img1, int x, int y, Image img2, double alpha) { ///
 
   for (int new_x = 0; new_x < img2->width; new_x++) {
     for (int new_y = 0; new_y < img2->height; new_y++) {
-      const int img1_idx = (new_y + y) * img1->width + (new_x + x);
+      const int old_x = new_x + x;
+      const int old_y = new_y + y;
 
-      const int img2_value = img1->pixel[img1_idx];
-      const int img1_value = img2->pixel[new_y * img2->width + new_x];
+      const int img2_value = ImageGetPixel(img1, old_x, old_y);
+      const int img1_value = ImageGetPixel(img2, new_x, new_y);
 
       // TODO: Is this alpha for the first or second image?
-      int updated_value = (int)((double)img1_value * alpha +
-                                (double)img2_value * (1 - alpha) + 0.5);
-      // TODO: Should this be saturate here or per alpha multiplication?
-      if (updated_value >= img1->maxval)
-        updated_value = img1->maxval;
-      else if (updated_value < 0)
-        updated_value = 0;
+      const int updated_value = (int)((double)img1_value * alpha +
+                                      (double)img2_value * (1 - alpha) + 0.5);
+      const int clamped_value = clamp(updated_value, 0, img1->maxval);
 
-      img1->pixel[img1_idx] = updated_value;
+      ImageSetPixel(img1, old_x, old_y, clamped_value);
     }
   }
 }
@@ -587,9 +597,8 @@ int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
 
   for (int new_x = 0; new_x < img2->width; new_x++) {
     for (int new_y = 0; new_y < img2->height; new_y++) {
-      const int img1_value =
-          img1->pixel[(new_y + y) * img1->width + (new_x + x)];
-      const int img2_value = img2->pixel[new_y * img2->width + new_x];
+      const int img1_value = ImageGetPixel(img1, new_x + x, new_y + y);
+      const int img2_value = ImageGetPixel(img1, new_x, new_y);
 
       if (img1_value != img2_value)
         return 0;
@@ -625,11 +634,6 @@ int ImageLocateSubImage(Image img1, int *px, int *py, Image img2) { ///
 
 /// Filtering
 
-static int clamp(int val, int min, int max) {
-  const int t = val < min ? min : val;
-  return t > max ? max : t;
-}
-
 /// Blur an image by a applying a (2dx+1)x(2dy+1) mean filter.
 /// Each pixel is substituted by the mean of the pixels in the rectangle
 /// [x-dx, x+dx]x[y-dy, y+dy].
@@ -658,12 +662,13 @@ void ImageBlur(Image img, int dx, int dy) {
 
           const int index = G(img, true_x, true_y);
 
+          PIXMEM += 1; // count one pixel access (read)
           accum += reference_values[index];
         }
       }
 
-      img->pixel[G(img, x, y)] =
-          (uint8)((double)accum / (double)win_area + 0.5);
+      const uint8 level = (uint8)((double)accum / (double)win_area + 0.5);
+      ImageSetPixel(img, x, y, level);
     }
   }
 
