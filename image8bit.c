@@ -612,18 +612,15 @@ int ImageLocateSubImage(Image img1, int *px, int *py, Image img2) { ///
     if (img2->width > img1->width || img2->height > img1->height)
         return 0;
 
-    int search_x = 0;
-    int search_y = 0;
-
-    // for (int x = 0; x < img1->width; x++) {
-    //   for (int y = 0; y < img1->height; y++) {
-    //     const int img1_value = img1->pixel[y * img1->width + x];
-    //     const int img2_value = img2->pixel[y * img2->width + x];
-    //
-    //     if (img1_value == img2_value)
-    //       return 0;
-    //   }
-    // }
+    for (int x = 0; x <= img1->width; x++) {
+        for (int y = 0; y < img1->height; y++) {
+            if (ImageMatchSubImage(img1, x, y, img2)) {
+                *px = x;
+                *py = y;
+                return 1;
+            }
+        }
+    }
 
     return 0;
 }
