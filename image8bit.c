@@ -610,8 +610,8 @@ int ImageLocateSubImage(Image img1, int *px, int *py, Image img2) { ///
   if (img2->width > img1->width || img2->height > img1->height)
     return 0;
 
-  for (int x = 0; x <= img1->width; x++) {
-    for (int y = 0; y < img1->height; y++) {
+  for (int x = 0; x <= img1->width - img2->width; x++) {
+    for (int y = 0; y < img1->height - img2->height; y++) {
       if (ImageMatchSubImage(img1, x, y, img2)) {
         *px = x;
         *py = y;
