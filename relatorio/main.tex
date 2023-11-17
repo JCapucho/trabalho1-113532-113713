@@ -1,0 +1,92 @@
+%!TEX encoding = UTF-8 Unicode
+
+\documentclass[11pt,a4paper]{report}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+\usepackage{lmodern}
+
+% Add support for portuguese writing rules
+\usepackage[portuguese]{babel}
+\babelprovide[transforms = hyphen.repeat]{portuguese}
+\usepackage[portuguese=portuguese]{csquotes}
+
+\usepackage{setspace}
+% Makes all references hyperlinked
+% NOTE: Must be loaded after setspace or it breaks
+\usepackage[hidelinks]{hyperref}
+% Needed for the figure H
+\usepackage{float}
+\usepackage{graphicx}
+\usepackage{fancyvrb}
+\usepackage{enumitem}
+% Better captions
+\usepackage[margin=10pt,font=small,labelfont=bf]{caption}
+\usepackage{cprotect}
+% Code highlighting in code blocks
+\usepackage[outputdir=build]{minted}
+\setminted{autogobble}
+% Prefix for code listings (default: Listing)
+\renewcommand{\listingscaption}{Código}
+% Use the chapter number in the listing counter
+\renewcommand{\thelisting}{\thechapter.\arabic{listing}}
+% Use TeX box for the minted environment
+\usepackage{xpatch}
+\xpretocmd{\minted}{\RecustomVerbatimEnvironment{Verbatim}{BVerbatim}{}}{}{}
+% Inline code commands
+\newmintinline{bash}{}
+% Number ranges
+\usepackage[detect-all]{siunitx}
+
+% Needed for diagrams
+\usepackage[dvipsnames]{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{shapes, arrows}
+
+% Defines an enumerated description list
+\newcounter{descriptcount}
+\newlist{enumdescript}{description}{1}
+\setlist[enumdescript,1]{%
+  before={\setcounter{descriptcount}{0}%
+          \renewcommand*\thedescriptcount{\arabic{descriptcount}.}}
+  ,font=\bfseries\stepcounter{descriptcount}\thedescriptcount~
+}
+
+% Add `showframe` to display geometry guides
+\usepackage[headheight=20mm,headsep=5mm]{geometry}
+
+\usepackage{fancyhdr}
+
+\pagestyle{fancy}
+\fancyhead[L]{\includegraphics[height=6mm]{figs/deti.png}}
+\fancyhead[C]{\leftmark}
+\fancyhead[R]{Sistemas Operativos}
+\fancypagestyle{plain}{}
+
+% Change the chapter title to the compact format
+% 	Number. Title
+% Instead of:
+% 	Capítulo Number.
+% 	Title
+\usepackage[explicit,compact]{titlesec}
+\titleformat{\chapter}[block]
+    {\bfseries\huge}{\filright\huge\thechapter.}{1ex}{\huge\filright #1}
+
+% Remove the header from the TOC page
+\AtBeginDocument{\addtocontents{toc}{\protect\thispagestyle{empty}}} 
+
+% Don't sort the bibliography, use the order of the citations usage
+\usepackage[sorting=none, dateabbrev=false, language=portuguese]{biblatex}
+\addbibresource{bibliography.bib}
+
+\begin{document}
+
+\include{cover}
+
+\tableofcontents
+
+
+\printbibliography[heading=bibintoc]
+
+\end{document}
