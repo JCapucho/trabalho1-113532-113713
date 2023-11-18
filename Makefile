@@ -78,6 +78,11 @@ test9: $(PROGS) setup
 	$(IMAGE_TOOL_RUN) test/original.pgm blur 7,7 save blur.pgm
 	cmp blur.pgm test/blur.pgm
 
+# Custom Tests
+testCreate: $(PROGS) setup
+	$(IMAGE_TOOL_RUN) create 10,10 save black.pgm
+	cmp black.pgm test/black.pgm
+
 .PHONY: tests
 tests: $(TESTS)
 
