@@ -83,6 +83,10 @@ testCreate: $(PROGS) setup
 	$(IMAGE_TOOL_RUN) create 10,10 save black.pgm
 	cmp black.pgm test/black.pgm
 
+testInfo: $(PROGS) setup
+	$(IMAGE_TOOL_RUN) test/original.pgm info | cmp - test/info.out
+
+
 .PHONY: tests
 tests: $(TESTS)
 
