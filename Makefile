@@ -86,6 +86,8 @@ testCreate: $(PROGS) setup
 testInfo: $(PROGS) setup
 	$(IMAGE_TOOL_RUN) test/original.pgm info | cmp - test/info.out
 
+testLocate: $(PROGS) setup
+	$(IMAGE_TOOL_RUN) test/black.pgm test/original.pgm locate | cmp - test/locate.out
 
 .PHONY: tests
 tests: $(TESTS)
