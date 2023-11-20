@@ -144,12 +144,14 @@ static int check(int condition, const char *failmsg) {
 /// Currently, simply calibrate instrumentation and set names of counters.
 void ImageInit(void) { ///
   InstrCalibrate();
-  InstrName[0] = "pixmem"; // InstrCount[0] will count pixel array acesses
-                           // Name other counters here...
+  InstrName[0] = "pixmem";  // InstrCount[0] will count pixel array acesses
+  InstrName[1] = "greycmp"; // InstrCount[1] will count grey value comparations
+                            // Name other counters here...
 }
 
 // Macros to simplify accessing instrumentation counters:
 #define PIXMEM InstrCount[0]
+#define GREYCMP InstrCount[1]
 // Add more macros here...
 
 // TIP: Search for PIXMEM or InstrCount to see where it is incremented!
@@ -600,6 +602,7 @@ int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
       const int img1_value = ImageGetPixel(img1, new_x + x, new_y + y);
       const int img2_value = ImageGetPixel(img2, new_x, new_y);
 
+      GREYCMP++;
       if (img1_value != img2_value)
         return 0;
     }
