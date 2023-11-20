@@ -377,6 +377,10 @@ static int clamp(int val, int min, int max) {
   return t > max ? max : t;
 }
 
+static inline int ceil_div(int num, int denom) {
+  return (int)((double)num / (double)denom + 0.5);
+}
+
 /// Get the pixel (level) at position (x,y).
 uint8 ImageGetPixel(Image img, int x, int y) { ///
   assert(img != NULL);
@@ -642,6 +646,12 @@ int ImageLocateSubImage(Image img1, int *px, int *py, Image img2) { ///
 /// [x-dx, x+dx]x[y-dy, y+dy].
 /// The image is changed in-place.
 void ImageBlur(Image img, int dx, int dy) {
+  int line_sum[img->width];
+
+  int win_width = 2 * dx + 1;
+  int win_height = 2 * dy + 1;
+  int win_area = win_width * win_height;
+
   const size_t pixels = sizeof(uint8) * img->width * img->height;
   uint8 *blurred_pixels = (uint8 *)malloc(pixels);
 
@@ -650,24 +660,41 @@ void ImageBlur(Image img, int dx, int dy) {
     return;
   }
 
-  const float win_area = ((2 * dx + 1) * (2 * dy + 1));
-
   for (int x = 0; x < img->width; x++) {
-    for (int y = 0; y < img->height; y++) {
-      int accum = 0;
+    line_sum[x] = (dy + 1) * ImageGetPixel(img, x, 0);
+    // todo: limit dy for less than dy height images
+    for (int win_y = 1; win_y <= dy; win_y++) {
+      line_sum[x] += ImageGetPixel(img, x, win_y);
+    }
+  }
 
-      for (int win_x = -dx; win_x <= dx; win_x++) {
-        for (int win_y = -dy; win_y <= dy; win_y++) {
-          const int true_x = clamp(x + win_x, 0, img->width - 1);
-          const int true_y = clamp(y + win_y, 0, img->height - 1);
+  for (int y = 0; y < img->height; y++) {
+    if (y != 0) {
+      for (int x = 0; x < img->width; x++) {
+        const int last_y = clamp(y - dy - 1, 0, img->height - 1);
+        const int next_y = clamp(y + dy, 0, img->height - 1);
 
-          accum += ImageGetPixel(img, true_x, true_y);
-        }
+        line_sum[x] +=
+            ImageGetPixel(img, x, next_y) - ImageGetPixel(img, x, last_y);
       }
+    }
 
-      const uint8 level = (uint8)((double)accum / (double)win_area + 0.5);
+    int soma = (dx + 1) * line_sum[0];
+    // todo: limit dx for less than dx width images
+    for (int half_win_x = 1; half_win_x <= dx; half_win_x++) {
+      soma += line_sum[half_win_x];
+    }
+
+    PIXMEM++; // count one pixel access (write)
+    blurred_pixels[G(img, 0, y)] = ceil_div(soma, win_area);
+
+    for (int x = 1; x < img->width; x++) {
+      const int last_x = clamp(x - dx - 1, 0, img->width - 1);
+      const int next_x = clamp(x + dx, 0, img->width - 1);
+
+      soma += line_sum[next_x] - line_sum[last_x];
       PIXMEM++; // count one pixel access (write)
-      blurred_pixels[G(img, x, y)] = level;
+      blurred_pixels[G(img, x, y)] = ceil_div(soma, win_area);
     }
   }
 
