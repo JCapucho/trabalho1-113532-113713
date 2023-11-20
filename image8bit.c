@@ -598,7 +598,7 @@ int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
   for (int new_x = 0; new_x < img2->width; new_x++) {
     for (int new_y = 0; new_y < img2->height; new_y++) {
       const int img1_value = ImageGetPixel(img1, new_x + x, new_y + y);
-      const int img2_value = ImageGetPixel(img1, new_x, new_y);
+      const int img2_value = ImageGetPixel(img2, new_x, new_y);
 
       if (img1_value != img2_value)
         return 0;
