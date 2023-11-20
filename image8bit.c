@@ -648,8 +648,11 @@ int ImageLocateSubImage(Image img1, int *px, int *py, Image img2) { ///
 void ImageBlur(Image img, int dx, int dy) {
   int line_sum[img->width];
 
-  int win_width = 2 * dx + 1;
-  int win_height = 2 * dy + 1;
+  int radius_x = img->width > dx ? dx : img->width - 1;
+  int radius_y = img->height > dy ? dy : img->height - 1;
+
+  int win_width = 2 * radius_x + 1;
+  int win_height = 2 * radius_y + 1;
   int win_area = win_width * win_height;
 
   const size_t pixels = sizeof(uint8) * img->width * img->height;
@@ -661,27 +664,25 @@ void ImageBlur(Image img, int dx, int dy) {
   }
 
   for (int x = 0; x < img->width; x++) {
-    line_sum[x] = (dy + 1) * ImageGetPixel(img, x, 0);
-    // todo: limit dy for less than dy height images
-    for (int win_y = 1; win_y <= dy; win_y++) {
-      line_sum[x] += ImageGetPixel(img, x, win_y);
+    line_sum[x] = (radius_y + 1) * ImageGetPixel(img, x, 0);
+    for (int half_win_y = 1; half_win_y <= radius_y; half_win_y++) {
+      line_sum[x] += ImageGetPixel(img, x, half_win_y);
     }
   }
 
   for (int y = 0; y < img->height; y++) {
     if (y != 0) {
-      for (int x = 0; x < img->width; x++) {
-        const int last_y = clamp(y - dy - 1, 0, img->height - 1);
-        const int next_y = clamp(y + dy, 0, img->height - 1);
+      const int last_y = clamp(y - radius_y - 1, 0, img->height - 1);
+      const int next_y = clamp(y + radius_y, 0, img->height - 1);
 
+      for (int x = 0; x < img->width; x++) {
         line_sum[x] +=
             ImageGetPixel(img, x, next_y) - ImageGetPixel(img, x, last_y);
       }
     }
 
-    int soma = (dx + 1) * line_sum[0];
-    // todo: limit dx for less than dx width images
-    for (int half_win_x = 1; half_win_x <= dx; half_win_x++) {
+    int soma = (radius_x + 1) * line_sum[0];
+    for (int half_win_x = 1; half_win_x <= radius_x; half_win_x++) {
       soma += line_sum[half_win_x];
     }
 
@@ -689,8 +690,8 @@ void ImageBlur(Image img, int dx, int dy) {
     blurred_pixels[G(img, 0, y)] = ceil_div(soma, win_area);
 
     for (int x = 1; x < img->width; x++) {
-      const int last_x = clamp(x - dx - 1, 0, img->width - 1);
-      const int next_x = clamp(x + dx, 0, img->width - 1);
+      const int last_x = clamp(x - radius_x - 1, 0, img->width - 1);
+      const int next_x = clamp(x + radius_x, 0, img->width - 1);
 
       soma += line_sum[next_x] - line_sum[last_x];
       PIXMEM++; // count one pixel access (write)
