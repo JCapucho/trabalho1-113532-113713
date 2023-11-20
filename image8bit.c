@@ -179,7 +179,7 @@ Image ImageCreate(int width, int height, uint8 maxval) { ///
   }
 
   // Allocate the pixel data buffer
-  uint8 *pixel = (uint8 *)malloc(width * height * sizeof(uint8));
+  uint8 *pixel = (uint8 *)calloc(width * height, sizeof(uint8));
   if (check(pixel == NULL, "Failed to allocate pixel data")) {
     errno = ENOMEM;
     return NULL;
