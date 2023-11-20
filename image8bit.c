@@ -640,14 +640,12 @@ int ImageLocateSubImage(Image img1, int *px, int *py, Image img2) { ///
 /// The image is changed in-place.
 void ImageBlur(Image img, int dx, int dy) {
   const size_t pixels = sizeof(uint8) * img->width * img->height;
-  uint8 *reference_values = (uint8 *)malloc(pixels);
+  uint8 *blurred_pixels = (uint8 *)malloc(pixels);
 
-  if (reference_values == NULL) {
+  if (blurred_pixels == NULL) {
     errCause = "Failed to allocate memory";
     return;
   }
-
-  memcpy(reference_values, img->pixel, pixels);
 
   const float win_area = ((2 * dx + 1) * (2 * dy + 1));
 
@@ -660,17 +658,17 @@ void ImageBlur(Image img, int dx, int dy) {
           const int true_x = clamp(x + win_x, 0, img->width - 1);
           const int true_y = clamp(y + win_y, 0, img->height - 1);
 
-          const int index = G(img, true_x, true_y);
-
-          PIXMEM += 1; // count one pixel access (read)
-          accum += reference_values[index];
+          accum += ImageGetPixel(img, true_x, true_y);
         }
       }
 
       const uint8 level = (uint8)((double)accum / (double)win_area + 0.5);
-      ImageSetPixel(img, x, y, level);
+      PIXMEM++; // count one pixel access (write)
+      blurred_pixels[G(img, x, y)] = level;
     }
   }
 
-  free(reference_values);
+  uint8 *temp = img->pixel;
+  img->pixel = blurred_pixels;
+  free(temp);
 }
