@@ -39,8 +39,7 @@ Como o segundo aditivo admite valores muito superiores ao
 primeiro, podemos apenas não considerar o primeiro.
 
 Então obtemos $w\cdot h \cdot (2dx + 1) \cdot (2dy + 1)$
-Se considerarmos x e y como sendo as dimensões totais da
-janela de blur, então $2dx + 1 = x$ e $2dy + 1 = y$,
+Se considerarmos \verb|x| e \verb|y| como sendo as dimensões totaisda janela de blur, então $2dx + 1 = x$ e $2dy + 1 = y$,
 pelo que a nossa primeira implementação de ImageBlur obtém
 uma complexidade computacional de $\mathcal{O}(w\cdot h\cdot
 x\cdot y)$, sendo w e h as dimensões da imagem a desfocar e
