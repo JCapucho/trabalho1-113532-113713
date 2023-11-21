@@ -664,6 +664,9 @@ void ImageBlur(Image img, int dx, int dy) {
 
   int line_sum[img->width];
 
+  int last_x = img->width - 1;
+  int last_y = img->height - 1;
+
   int radius_x = img->width > dx ? dx : last_x;
   int radius_y = img->height > dy ? dy : last_y;
 
@@ -671,11 +674,17 @@ void ImageBlur(Image img, int dx, int dy) {
   int win_height = 2 * dy + 1;
   int win_area = win_width * win_height;
 
+  int spill_x = dx >= img->width ? dx - radius_x + 1 : 1;
+  int spill_y = dy >= img->height ? dy - radius_y + 1 : 1;
+
   for (int x = 0; x < img->width; x++) {
-    line_sum[x] = (radius_y + 1) * ImageGetPixel(img, x, 0);
-    for (int half_win_y = 1; half_win_y <= radius_y; half_win_y++) {
+    line_sum[x] = (dy + 1) * ImageGetPixel(img, x, 0);
+
+    for (int half_win_y = 1; half_win_y < radius_y; half_win_y++) {
       line_sum[x] += ImageGetPixel(img, x, half_win_y);
     }
+
+    line_sum[x] += spill_y * ImageGetPixel(img, x, radius_y);
   }
 
   for (int y = 0; y < img->height; y++) {
@@ -690,9 +699,10 @@ void ImageBlur(Image img, int dx, int dy) {
     }
 
     int soma = (radius_x + 1) * line_sum[0];
-    for (int half_win_x = 1; half_win_x <= radius_x; half_win_x++) {
+    for (int half_win_x = 1; half_win_x < radius_x; half_win_x++) {
       soma += line_sum[half_win_x];
     }
+    soma += spill_x * line_sum[radius_x];
 
     PIXMEM++; // count one pixel access (write)
     blurred_pixels[G(img, 0, y)] = round_div(soma, win_area);
