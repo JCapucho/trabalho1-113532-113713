@@ -680,12 +680,12 @@ void ImageBlur(Image img, int dx, int dy) {
 
   for (int y = 0; y < img->height; y++) {
     if (y != 0) {
-      const int last_y = clamp(y - radius_y - 1, 0, img->height - 1);
-      const int next_y = clamp(y + radius_y, 0, img->height - 1);
+      const int prev_y = clamp(y - radius_y - 1, 0, last_y);
+      const int next_y = clamp(y + radius_y, 0, last_y);
 
       for (int x = 0; x < img->width; x++) {
         line_sum[x] +=
-            ImageGetPixel(img, x, next_y) - ImageGetPixel(img, x, last_y);
+            ImageGetPixel(img, x, next_y) - ImageGetPixel(img, x, prev_y);
       }
     }
 
@@ -698,10 +698,10 @@ void ImageBlur(Image img, int dx, int dy) {
     blurred_pixels[G(img, 0, y)] = round_div(soma, win_area);
 
     for (int x = 1; x < img->width; x++) {
-      const int last_x = clamp(x - radius_x - 1, 0, img->width - 1);
-      const int next_x = clamp(x + radius_x, 0, img->width - 1);
+      const int prev_x = clamp(x - radius_x - 1, 0, last_x);
+      const int next_x = clamp(x + radius_x, 0, last_x);
 
-      soma += line_sum[next_x] - line_sum[last_x];
+      soma += line_sum[next_x] - line_sum[prev_x];
       PIXMEM++; // count one pixel access (write)
       blurred_pixels[G(img, x, y)] = round_div(soma, win_area);
     }
