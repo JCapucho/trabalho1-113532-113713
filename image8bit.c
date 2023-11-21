@@ -146,12 +146,14 @@ void ImageInit(void) { ///
   InstrCalibrate();
   InstrName[0] = "pixmem";  // InstrCount[0] will count pixel array acesses
   InstrName[1] = "greycmp"; // InstrCount[1] will count grey value comparations
-                            // Name other counters here...
+  InstrName[2] = "divisions"; // InstrCount[2] will count divisions
+                              // Name other counters here...
 }
 
 // Macros to simplify accessing instrumentation counters:
 #define PIXMEM InstrCount[0]
 #define GREYCMP InstrCount[1]
+#define DIVISIONS InstrCount[2]
 // Add more macros here...
 
 // TIP: Search for PIXMEM or InstrCount to see where it is incremented!
@@ -380,6 +382,7 @@ static int clamp(int val, int min, int max) {
 /// Calculates the integer division between the numerator
 /// and denominator respectively, rounding the result.
 static inline int round_div(int num, int denom) {
+  DIVISIONS++;
   return (int)((double)num / (double)denom + 0.5);
 }
 
