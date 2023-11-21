@@ -377,7 +377,9 @@ static int clamp(int val, int min, int max) {
   return t > max ? max : t;
 }
 
-static inline int ceil_div(int num, int denom) {
+/// Calculates the integer division between the numerator
+/// and denominator respectively, rounding the result.
+static inline int round_div(int num, int denom) {
   return (int)((double)num / (double)denom + 0.5);
 }
 
@@ -687,7 +689,7 @@ void ImageBlur(Image img, int dx, int dy) {
     }
 
     PIXMEM++; // count one pixel access (write)
-    blurred_pixels[G(img, 0, y)] = ceil_div(soma, win_area);
+    blurred_pixels[G(img, 0, y)] = round_div(soma, win_area);
 
     for (int x = 1; x < img->width; x++) {
       const int last_x = clamp(x - radius_x - 1, 0, img->width - 1);
@@ -695,7 +697,7 @@ void ImageBlur(Image img, int dx, int dy) {
 
       soma += line_sum[next_x] - line_sum[last_x];
       PIXMEM++; // count one pixel access (write)
-      blurred_pixels[G(img, x, y)] = ceil_div(soma, win_area);
+      blurred_pixels[G(img, x, y)] = round_div(soma, win_area);
     }
   }
 
