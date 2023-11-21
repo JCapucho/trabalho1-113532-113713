@@ -651,22 +651,25 @@ int ImageLocateSubImage(Image img1, int *px, int *py, Image img2) { ///
 /// [x-dx, x+dx]x[y-dy, y+dy].
 /// The image is changed in-place.
 void ImageBlur(Image img, int dx, int dy) {
-  int line_sum[img->width];
+  assert(dx >= 0);
+  assert(dx >= 0);
 
-  int radius_x = img->width > dx ? dx : img->width - 1;
-  int radius_y = img->height > dy ? dy : img->height - 1;
-
-  int win_width = 2 * radius_x + 1;
-  int win_height = 2 * radius_y + 1;
-  int win_area = win_width * win_height;
-
-  const size_t pixels = sizeof(uint8) * img->width * img->height;
-  uint8 *blurred_pixels = (uint8 *)malloc(pixels);
+  const size_t num_pixels = sizeof(uint8) * img->width * img->height;
+  uint8 *blurred_pixels = (uint8 *)malloc(num_pixels);
 
   if (blurred_pixels == NULL) {
     errCause = "Failed to allocate memory";
     return;
   }
+
+  int line_sum[img->width];
+
+  int radius_x = img->width > dx ? dx : last_x;
+  int radius_y = img->height > dy ? dy : last_y;
+
+  int win_width = 2 * dx + 1;
+  int win_height = 2 * dy + 1;
+  int win_area = win_width * win_height;
 
   for (int x = 0; x < img->width; x++) {
     line_sum[x] = (radius_y + 1) * ImageGetPixel(img, x, 0);
