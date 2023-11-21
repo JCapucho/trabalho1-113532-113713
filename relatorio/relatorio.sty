@@ -1,0 +1,85 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{relatorio}
+
+% Add support for portuguese writing rules
+\RequirePackage[portuguese]{babel}
+\babelprovide[transforms = hyphen.repeat]{portuguese}
+\RequirePackage[portuguese=portuguese]{csquotes}
+
+\RequirePackage{setspace}
+% Makes all references hyperlinked
+% NOTE: Must be loaded after setspace or it breaks
+\RequirePackage[hidelinks]{hyperref}
+% Needed for the figure H
+\RequirePackage{float}
+\RequirePackage{graphicx}
+\RequirePackage{fancyvrb}
+\RequirePackage{enumitem}
+% Better captions
+\RequirePackage[margin=10pt,font=small,labelfont=bf]{caption}
+\RequirePackage{cprotect}
+\RequirePackage{ragged2e}
+% Code highlighting in code blocks
+\RequirePackage[outputdir=build]{minted}
+\setminted{autogobble}
+% Prefix for code listings (default: Listing)
+\renewcommand{\listingscaption}{Código}
+% Use the chapter number in the listing counter
+\renewcommand{\thelisting}{\thechapter.\arabic{listing}}
+% Use TeX box for the minted environment
+\RequirePackage{xpatch}
+\xpretocmd{\minted}{\RecustomVerbatimEnvironment{Verbatim}{BVerbatim}{}}{}{}
+% Inline code commands
+\newmintinline{bash}{}
+% Number ranges
+\RequirePackage[detect-all]{siunitx}
+\RequirePackage{amsmath}
+
+% Needed for diagrams
+\RequirePackage[dvipsnames]{xcolor}
+\RequirePackage{tikz}
+\usetikzlibrary{shapes, arrows}
+
+% Defines an enumerated description list
+\newcounter{descriptcount}
+\newlist{enumdescript}{description}{1}
+\setlist[enumdescript,1]{%
+	before={\setcounter{descriptcount}{0}%
+			\renewcommand*\thedescriptcount{\arabic{descriptcount}.}}
+	,font=\bfseries\stepcounter{descriptcount}\thedescriptcount~
+}
+
+% Add `showframe` to display geometry guides
+\RequirePackage[headheight=20mm,headsep=5mm]{geometry}
+
+\gdef \cadeira {}
+\newcommand{\setcadeira}{\gdef\cadeira}
+\gdef \ano {}
+\newcommand{\setano}{\gdef\ano}
+
+\RequirePackage{fancyhdr}
+
+\pagestyle{fancy}
+\fancyhead[L]{\includegraphics[width=0.25\textwidth]{figs/deti.png}}
+\fancyhead[C]{%
+	\centering%
+	\parbox[b]{0.40\textwidth}{\centering\leftmark}%
+}
+\fancyhead[R]{\parbox[b]{0.25\textwidth}{\RaggedRight{\cadeira}}}
+\fancypagestyle{plain}{}
+
+% Change the chapter title to the compact format
+% 	Number. Title
+% Instead of:
+% 	Capítulo Number.
+% 	Title
+\RequirePackage[explicit,compact]{titlesec}
+\titleformat{\chapter}[block]
+{\bfseries\huge}{\filright\huge\thechapter.}{1ex}{\huge\filright #1}
+
+% Remove the header from the TOC page
+\AtBeginDocument{\addtocontents{toc}{\protect\thispagestyle{empty}}}
+
+% Don't sort the bibliography, use the order of the citations usage
+\RequirePackage[sorting=none, dateabbrev=false, language=portuguese]{biblatex}
+

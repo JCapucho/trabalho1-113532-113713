@@ -1,27 +1,28 @@
-\thispagestyle{empty}
+\makeatletter
+\begin{titlepage}
 
-\begin{figure}[H]
-	\centering
-	\includegraphics[width=12cm]{figs/deti.png}
-\end{figure}
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=12cm]{figs/deti.png}
+	\end{figure}
 
-\vspace{4cm}
+	\vspace{4cm}
 
-\begin{center}
-	\onehalfspacing\textbf{\huge
-		O TAD image8bit:
-		Análise de complexidade algorítmica
-	}\\
-	\vspace{1cm}
-	{\LARGE Algoritmos e Estruturas de Dados}
+	\begin{center}
+		\onehalfspacing\textbf{\huge \@title}\\
+		\vspace{1cm}
+		{\LARGE \cadeira}
 
-	\vspace{2cm}
+		\vspace{2cm}
 
-	\large
-	\begin{tabular}{ r c c }
-		Igor Coelho   & - & 113532 \\
-		João Capucho  & - & 113713 
-	\end{tabular}
-	\vfill
-	{\Large 2023/2024}
-\end{center}
+		\large
+		\begin{tabular}{ r c c }
+			Igor Coelho  & - & 113532 \\
+			João Capucho & - & 113713
+		\end{tabular}
+		\vfill
+		{\Large \ano}
+	\end{center}
+
+\end{titlepage}
+\makeatother

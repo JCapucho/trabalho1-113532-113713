@@ -15,6 +15,8 @@
     in {
       devShells.default = pkgs.mkShell {
         buildInputs = with pkgs; [
+          texlab
+          python3Packages.pygments
           # C
           gdb
           bear

@@ -1,4 +1,4 @@
-\chapter{Análise da função ImageBlur}
+\chapter[ImageBlur]{Análise da função ImageBlur}
 
 \section{Primeira Implementação}
 Consideremos uma versão bastante simplificada da função em que apenas consideramos os incrementos a PIXMEM. Consideremos
@@ -6,7 +6,8 @@ Consideremos uma versão bastante simplificada da função em que apenas conside
 \verb|dx| o raio horizontal da janela de blur e \verb|dy| o
 raio vertical da janela de blur;
 \begin{listing}[H]
-\begin{minted}{c}
+	\centering
+	\begin{minted}{c}
   // (...) 
   for (int x = 0; x < img->width; x++) {
     for (int y = 0; y < img->height; y++) {
@@ -19,20 +20,19 @@ raio vertical da janela de blur;
     }
   }
   // (...)
-}
 \end{minted}
 \end{listing}
 
 Matemáticamente representável como:
 \\
 \begin{equation}
-  \sum_{a=0}^{w}\sum_{b=0}^{h} (1 + \sum_{c=-dx}^{dx+1}\sum_{d=-dy}^{dy+1} 1) 
-   = \sum_{a=0}^{w}\sum_{b=0}^{h} 1 +
-  \sum_{a=0}^{w}\sum_{b=0}^{h} 
- \sum_{c=-dx}^{dx+1}\sum_{d=-dy}^{dy+1} 1
+	\sum_{a=0}^{w}\sum_{b=0}^{h} (1 + \sum_{c=-dx}^{dx+1}\sum_{d=-dy}^{dy+1} 1)
+	= \sum_{a=0}^{w}\sum_{b=0}^{h} 1 +
+	\sum_{a=0}^{w}\sum_{b=0}^{h}
+	\sum_{c=-dx}^{dx+1}\sum_{d=-dy}^{dy+1} 1
 \end{equation}
 \begin{align*}
- = (w \cdot h) + (w \cdot h \cdot (2dx + 1) \cdot (2dy + 1))
+	= (w \cdot h) + (w \cdot h \cdot (2dx + 1) \cdot (2dy + 1))
 \end{align*}
 
 Como o segundo aditivo admite valores muito superiores ao
@@ -42,7 +42,7 @@ Então obtemos $w\cdot h \cdot (2dx + 1) \cdot (2dy + 1)$
 Se considerarmos \verb|x| e \verb|y| como sendo as dimensões totaisda janela de blur, então $2dx + 1 = x$ e $2dy + 1 = y$,
 pelo que a nossa primeira implementação de ImageBlur obtém
 uma complexidade computacional de $\mathcal{O}(w\cdot h\cdot
-x\cdot y)$, sendo w e h as dimensões da imagem a desfocar e
+	x\cdot y)$, sendo w e h as dimensões da imagem a desfocar e
 x e y o tamanho da janela utilizada.
 
 
