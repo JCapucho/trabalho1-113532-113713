@@ -689,8 +689,8 @@ void ImageBlur(Image img, int dx, int dy) {
 
   for (int y = 0; y < img->height; y++) {
     if (y != 0) {
-      const int prev_y = clamp(y - radius_y - 1, 0, last_y);
-      const int next_y = clamp(y + radius_y, 0, last_y);
+      const int prev_y = clamp(y - dy - 1, 0, last_y);
+      const int next_y = clamp(y + dy, 0, last_y);
 
       for (int x = 0; x < img->width; x++) {
         line_sum[x] +=
@@ -698,7 +698,7 @@ void ImageBlur(Image img, int dx, int dy) {
       }
     }
 
-    int soma = (radius_x + 1) * line_sum[0];
+    int soma = (dx + 1) * line_sum[0];
     for (int half_win_x = 1; half_win_x < radius_x; half_win_x++) {
       soma += line_sum[half_win_x];
     }
@@ -708,8 +708,8 @@ void ImageBlur(Image img, int dx, int dy) {
     blurred_pixels[G(img, 0, y)] = round_div(soma, win_area);
 
     for (int x = 1; x < img->width; x++) {
-      const int prev_x = clamp(x - radius_x - 1, 0, last_x);
-      const int next_x = clamp(x + radius_x, 0, last_x);
+      const int prev_x = clamp(x - dx - 1, 0, last_x);
+      const int next_x = clamp(x + dx, 0, last_x);
 
       soma += line_sum[next_x] - line_sum[prev_x];
       PIXMEM++; // count one pixel access (write)
