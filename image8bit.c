@@ -9,8 +9,6 @@
 /// João Manuel Rodrigues <jmr@ua.pt>
 /// 2013, 2023
 
-// TODO: Clarify rounding (grep for + 0.5)?
-
 // Student authors (fill in below):
 // NMec: 113532 Name: Igor Coelho
 // NMec: 113713 Name: João Capucho
@@ -156,6 +154,38 @@ void ImageInit(void) { ///
 #define DIVISIONS InstrCount[2]
 // Add more macros here...
 
+// Helper macros for iteration over the coordinates of an image
+
+// Macro to iterate over a rect of WIDTH by HEIGHT, X and Y are the variable
+// names where the coordinates for the current iteration will be stored.
+//
+// The body must be specified exactly as in a for loop, either a single
+// statement after the macro invocation or a block delimited by braces.
+//
+// The order of iteration here is important, since the image is laid out such
+// that pixels on the same line are adjacent, by iterating over each line
+// (instead of each column) memory accesses will be more likely to hit cache
+// since modern processors caches store wide lanes of contiguous memory [^1].
+//
+// Additionally since, once again, the memory is contiguous it's possible for
+// vectorization of the code by using SIMD (Single Instruction/Multiple Data)
+// instructions, this could be done manually (or potentially automatically by
+// the compiler [^2]).
+//
+// [1]: http://igoro.com/archive/gallery-of-processor-cache-effects
+// [2]: https://en.wikipedia.org/wiki/Automatic_vectorization
+#define FOR_COORDINATES_SIZED(X, Y, WIDTH, HEIGHT)                             \
+  for (int Y = 0; Y < HEIGHT; Y++)                                             \
+    for (int X = 0; X < WIDTH; X++)
+
+// This macro is very similar to FOR_COORDINATES_SIZED but instead of receiving
+// the width and the height as arguments they are sourced directly from an
+// Image.
+//
+// Same considerations as in FOR_COORDINATES_SIZED apply.
+#define FOR_COORDINATES(IMG, X, Y)                                             \
+  FOR_COORDINATES_SIZED(X, Y, IMG->width, IMG->height)
+
 // TIP: Search for PIXMEM or InstrCount to see where it is incremented!
 
 /// Image management functions
@@ -175,15 +205,14 @@ Image ImageCreate(int width, int height, uint8 maxval) { ///
 
   // Allocate the image struct backing memory
   const Image image = (Image)malloc(sizeof(struct image));
-  if (check(image == NULL, "Failed to allocate image")) {
-    errno = ENOMEM;
+  if (check(image == NULL, "Failed to allocate image"))
     return NULL;
-  }
 
   // Allocate the pixel data buffer
   uint8 *pixel = (uint8 *)calloc(width * height, sizeof(uint8));
   if (check(pixel == NULL, "Failed to allocate pixel data")) {
-    errno = ENOMEM;
+    // The image still was allocated so it needs to be freed
+    free(image);
     return NULL;
   }
 
@@ -208,7 +237,7 @@ void ImageDestroy(Image *imgp) { ///
 
   free((*imgp)->pixel);
   free(*imgp);
-  imgp = NULL;
+  *imgp = NULL;
 }
 
 /// PGM file operations
@@ -317,6 +346,9 @@ int ImageMaxval(Image img) { ///
   return img->maxval;
 }
 
+/// Calculates the area of the image
+static inline int ImageArea(Image img) { return img->width * img->height; }
+
 /// Pixel stats
 /// Find the minimum and maximum gray levels in image.
 /// On return,
@@ -324,15 +356,17 @@ int ImageMaxval(Image img) { ///
 /// *max is set to the maximum.
 void ImageStats(Image img, uint8 *min, uint8 *max) { ///
   assert(img != NULL);
-  int lastPixel = img->width * img->height;
-  *min = *max = img->pixel[0];
-  for (int i = 1; i < lastPixel; i++) {
-    PIXMEM += 1; // count one pixel access (read)
+
+  int num_pixels = ImageArea(img);
+  *min = *max = ImageGetPixel(img, 0, 0);
+
+  for (int i = 1; i < num_pixels; i++) {
+    PIXMEM++; // count one pixel access (read)
     const uint8 level = img->pixel[i];
+
     if (level > *max) {
       *max = level;
-    }
-    if (level < *min) {
+    } else if (level < *min) {
       *min = level;
     }
   }
@@ -347,7 +381,8 @@ int ImageValidPos(Image img, int x, int y) { ///
 /// Check if rectangular area (x,y,w,h) is completely inside img.
 int ImageValidRect(Image img, int x, int y, int w, int h) { ///
   assert(img != NULL);
-  // TODO: Should x and y be non negative?
+  assert(x >= 0 && y >= 0);
+  assert(w >= 0 && h >= 0);
 
   // Subtract the dimensions instead of adding the dimension and the offset,
   // this prevents the value from potentially overflowing, since the dimensions
@@ -366,7 +401,6 @@ int ImageValidRect(Image img, int x, int y, int w, int h) { ///
 // This internal function is used in ImageGetPixel / ImageSetPixel.
 // The returned index must satisfy (0 <= index < img->width*img->height)
 static inline int G(Image img, int x, int y) {
-  // TODO: Bound checks?
   const int index = y * img->width + x;
   assert(0 <= index && index < img->width * img->height);
   return index;
@@ -414,8 +448,8 @@ void ImageSetPixel(Image img, int x, int y, uint8 level) { ///
 /// resulting in a "photographic negative" effect.
 void ImageNegative(Image img) { ///
   assert(img != NULL);
-  const size_t pixels = img->width * img->height;
-  for (size_t i = 0; i < pixels; i++) {
+  const size_t num_pixels = ImageArea(img);
+  for (size_t i = 0; i < num_pixels; i++) {
     PIXMEM += 2; // count two pixels accesses (1 read and 1 write)
     img->pixel[i] = img->maxval - img->pixel[i];
   }
@@ -426,8 +460,8 @@ void ImageNegative(Image img) { ///
 /// all pixels with level>=thr to white (maxval).
 void ImageThreshold(Image img, uint8 thr) { ///
   assert(img != NULL);
-  const size_t pixels = img->width * img->height;
-  for (size_t i = 0; i < pixels; i++) {
+  const size_t num_pixels = ImageArea(img);
+  for (size_t i = 0; i < num_pixels; i++) {
     PIXMEM += 2; // count two pixels accesses (1 read and 1 write)
     const int current_value = img->pixel[i];
     img->pixel[i] = current_value >= thr ? img->maxval : 0;
@@ -440,10 +474,9 @@ void ImageThreshold(Image img, uint8 thr) { ///
 /// darken the image if factor<1.0.
 void ImageBrighten(Image img, double factor) { ///
   assert(img != NULL);
-  // ? assert (factor >= 0.0);
-  // TODO: ^^^^^ ?
-  const size_t pixels = img->width * img->height;
-  for (size_t i = 0; i < pixels; i++) {
+  assert(factor >= 0.0);
+  const size_t num_pixels = ImageArea(img);
+  for (size_t i = 0; i < num_pixels; i++) {
     PIXMEM += 2; // count two pixels accesses (1 read and 1 write)
     const int current_value = img->pixel[i];
     // Add +0.5 for rounding
@@ -476,18 +509,25 @@ void ImageBrighten(Image img, double factor) { ///
 Image ImageRotate(Image img) { ///
   assert(img != NULL);
 
-  // The order of width and height is reversed since the image is rotated
+  // The width and height will be swapped since the image is rotated
   const Image new_img = ImageCreate(img->height, img->width, img->maxval);
+  // The errno and errCause from ImageCreate will be propagated
   if (new_img == NULL)
     return NULL;
 
-  for (int x = 0; x < img->width; x++) {
-    for (int y = 0; y < img->height; y++) {
-      const int new_x = y;
-      const int new_y = new_img->height - x - 1;
-      const uint8 level = ImageGetPixel(img, x, y);
-      ImageSetPixel(new_img, new_x, new_y, level);
-    }
+  // If we rotate an image 90 degrees anti-clockwise we can define a function
+  // f that will take the current coordinates of a given pixel and map it to
+  // a new pixel. This function is defined as
+  //
+  // f(x, y) := (y, H - x - 1)
+  //
+  // Where the H is the image height.
+
+  FOR_COORDINATES(img, x, y) {
+    const int new_x = y;
+    const int new_y = new_img->height - x - 1;
+    const uint8 level = ImageGetPixel(img, x, y);
+    ImageSetPixel(new_img, new_x, new_y, level);
   }
 
   return new_img;
@@ -504,14 +544,13 @@ Image ImageMirror(Image img) {
   assert(img != NULL);
 
   const Image new_img = ImageCreate(img->width, img->height, img->maxval);
+  // The errno and errCause from ImageCreate will be propagated
   if (new_img == NULL)
     return NULL;
 
-  for (int x = 0; x < img->width; x++) {
-    for (int y = 0; y < img->height; y++) {
-      const uint8 level = ImageGetPixel(img, x, y);
-      ImageSetPixel(new_img, img->width - x - 1, y, level);
-    }
+  FOR_COORDINATES(img, x, y) {
+    const uint8 level = ImageGetPixel(img, x, y);
+    ImageSetPixel(new_img, img->width - x - 1, y, level);
   }
 
   return new_img;
@@ -534,14 +573,13 @@ Image ImageCrop(Image img, int x, int y, int w, int h) { ///
   assert(ImageValidRect(img, x, y, w, h));
 
   const Image new_img = ImageCreate(w, h, img->maxval);
+  // The errno and errCause from ImageCreate will be propagated
   if (new_img == NULL)
     return NULL;
 
-  for (int new_x = 0; new_x < w; new_x++) {
-    for (int new_y = 0; new_y < h; new_y++) {
-      const uint8 level = ImageGetPixel(img, new_x + x, new_y + y);
-      ImageSetPixel(new_img, new_x, new_y, level);
-    }
+  FOR_COORDINATES_SIZED(new_x, new_y, w, h) {
+    const uint8 level = ImageGetPixel(img, new_x + x, new_y + y);
+    ImageSetPixel(new_img, new_x, new_y, level);
   }
 
   return new_img;
@@ -558,11 +596,9 @@ void ImagePaste(Image img1, int x, int y, Image img2) { ///
   assert(img2 != NULL);
   assert(ImageValidRect(img1, x, y, img2->width, img2->height));
 
-  for (int new_x = 0; new_x < img2->width; new_x++) {
-    for (int new_y = 0; new_y < img2->height; new_y++) {
-      const uint8 level = ImageGetPixel(img2, new_x, new_y);
-      ImageSetPixel(img1, new_x + x, new_y + y, level);
-    }
+  FOR_COORDINATES(img2, new_x, new_y) {
+    const uint8 level = ImageGetPixel(img2, new_x, new_y);
+    ImageSetPixel(img1, new_x + x, new_y + y, level);
   }
 }
 
@@ -577,21 +613,18 @@ void ImageBlend(Image img1, int x, int y, Image img2, double alpha) { ///
   assert(img2 != NULL);
   assert(ImageValidRect(img1, x, y, img2->width, img2->height));
 
-  for (int new_x = 0; new_x < img2->width; new_x++) {
-    for (int new_y = 0; new_y < img2->height; new_y++) {
-      const int old_x = new_x + x;
-      const int old_y = new_y + y;
+  FOR_COORDINATES(img2, new_x, new_y) {
+    const int old_x = new_x + x;
+    const int old_y = new_y + y;
 
-      const int img2_value = ImageGetPixel(img1, old_x, old_y);
-      const int img1_value = ImageGetPixel(img2, new_x, new_y);
+    const int img2_value = ImageGetPixel(img1, old_x, old_y);
+    const int img1_value = ImageGetPixel(img2, new_x, new_y);
 
-      // TODO: Is this alpha for the first or second image?
-      const int updated_value = (int)((double)img1_value * alpha +
-                                      (double)img2_value * (1 - alpha) + 0.5);
-      const int clamped_value = clamp(updated_value, 0, img1->maxval);
+    const int updated_value = (int)((double)img1_value * alpha +
+                                    (double)img2_value * (1 - alpha) + 0.5);
+    const int clamped_value = clamp(updated_value, 0, img1->maxval);
 
-      ImageSetPixel(img1, old_x, old_y, clamped_value);
-    }
+    ImageSetPixel(img1, old_x, old_y, clamped_value);
   }
 }
 
@@ -606,15 +639,13 @@ int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
   if (!ImageValidRect(img1, x, y, img2->width, img2->height))
     return 0;
 
-  for (int new_x = 0; new_x < img2->width; new_x++) {
-    for (int new_y = 0; new_y < img2->height; new_y++) {
-      const int img1_value = ImageGetPixel(img1, new_x + x, new_y + y);
-      const int img2_value = ImageGetPixel(img2, new_x, new_y);
+  FOR_COORDINATES(img2, new_x, new_y) {
+    const int img1_value = ImageGetPixel(img1, new_x + x, new_y + y);
+    const int img2_value = ImageGetPixel(img2, new_x, new_y);
 
-      GREYCMP++;
-      if (img1_value != img2_value)
-        return 0;
-    }
+    GREYCMP++;
+    if (img1_value != img2_value)
+      return 0;
   }
 
   return 1;
@@ -631,13 +662,17 @@ int ImageLocateSubImage(Image img1, int *px, int *py, Image img2) { ///
   if (img2->width > img1->width || img2->height > img1->height)
     return 0;
 
-  for (int x = 0; x <= img1->width - img2->width; x++) {
-    for (int y = 0; y < img1->height - img2->height; y++) {
-      if (ImageMatchSubImage(img1, x, y, img2)) {
-        *px = x;
-        *py = y;
-        return 1;
-      }
+  // Since the image needs to fit in order to be a subimage, it doesn't make
+  // sense to check the last pixels on the end of a line (or the bottom of an
+  // image) that wouldn't have enough space to fit the subimage.
+  const int check_width = img1->width - img2->width;
+  const int check_height = img1->height - img2->height;
+
+  FOR_COORDINATES_SIZED(x, y, check_width, check_height) {
+    if (ImageMatchSubImage(img1, x, y, img2)) {
+      *px = x;
+      *py = y;
+      return 1;
     }
   }
 
@@ -651,44 +686,106 @@ int ImageLocateSubImage(Image img1, int *px, int *py, Image img2) { ///
 /// [x-dx, x+dx]x[y-dy, y+dy].
 /// The image is changed in-place.
 void ImageBlur(Image img, int dx, int dy) {
-  assert(dx >= 0);
-  assert(dx >= 0);
+  assert(img != NULL);
+  assert(dx >= 0 && dy >= 0);
 
-  const size_t num_pixels = sizeof(uint8) * img->width * img->height;
+  // The blurred pixels will be written to a separate array that will be swapped
+  // at the end because the original pixels values will be needed at all times.
+  const size_t num_pixels = sizeof(uint8) * ImageArea(img);
   uint8 *blurred_pixels = (uint8 *)malloc(num_pixels);
 
-  if (blurred_pixels == NULL) {
-    errCause = "Failed to allocate memory";
+  if (check(blurred_pixels == NULL, "Failed to allocate memory"))
     return;
-  }
 
+  // The algorithm implemented here is based on the ideas of the
+  // FMF/FMFT (Fast Mean Filter).
+  //
+  // The three basic ideas behind these algorithms/techniques are:
+  // 1. Since all pixels have equal weight instead of dividing each one and
+  //    adding them to obtain the blurred value, the raw values are added and
+  //    then divided (this works because of the distributive property).
+  // 2. The filter is separable this means that instead of calculating the
+  //    entire filter at once, we can instead apply a 1D filter in each axis and
+  //    then obtain the full filter by calculating the product of both axis.
+  // 3. Since the pixels that contribute in the filter for a given pixel are
+  //    almost identical for the adjacent pixels except for two (in case of a 1D
+  //    filter) instead of recalculating the sum, the previous sum is used and
+  //    the value of the pixel that no longer belongs to the filter window is
+  //    removed and the pixel that entered the window has is value added to the
+  //    sum.
+  //
+  // All of these together allows us to design a filter that is essentially
+  // independent of the window size, except for a small initialization step.
+
+  // Array of the sums used for the 1D filter spanning the y axis with radius
+  // dy.
   int line_sum[img->width];
 
+  // The last valid index in each axis
   int last_x = img->width - 1;
   int last_y = img->height - 1;
 
+  // The effective radius to consider when fetching pixels from memory for the
+  // filter sum.
   int radius_x = img->width > dx ? dx : last_x;
   int radius_y = img->height > dy ? dy : last_y;
 
+  // The filter window sizes and areas.
   int win_width = 2 * dx + 1;
   int win_height = 2 * dy + 1;
   int win_area = win_width * win_height;
 
+  // The size of the filter window that exceeds the image size plus 1 for each
+  // axis.
   int spill_x = dx >= img->width ? dx - radius_x + 1 : 1;
   int spill_y = dy >= img->height ? dy - radius_y + 1 : 1;
 
+  // Initialization phase
+  //
+  // This phase is responsible for initializing the sum vector that will be
+  // used throughout the algorithm. In here the sum of 1D filter in the y axis
+  // will be calculated for all pixels in the first line.
+  //
+  // The principle of accumulation can't be used here since we don't have a
+  // previous value so each pixel in the window will read and it's value added
+  // to the sum on the corresponding position.
   for (int x = 0; x < img->width; x++) {
+    // The first pixel value will appear once in it's position but also y
+    // radius of the filter window times, because we are considering a border
+    // clamp sampling of the pixels, this means that all out of bounds pixel
+    // accesses will be mapped to the nearest pixel.
     line_sum[x] = (dy + 1) * ImageGetPixel(img, x, 0);
 
+    // Each of the pixels in the effective radius will be added to the sum we
+    // are calculating minus the last.
     for (int half_win_y = 1; half_win_y < radius_y; half_win_y++) {
       line_sum[x] += ImageGetPixel(img, x, half_win_y);
     }
 
+    // The last pixel will, like the first pixel, not only appear once but also
+    // as many times as the filter window exceeds the image size.
     line_sum[x] += spill_y * ImageGetPixel(img, x, radius_y);
   }
 
+  // From this point on each line will be treated individually to calculate it's
+  // blurred values.
   for (int y = 0; y < img->height; y++) {
+    // NOTE: This part could be made more efficient (in run time, not number of
+    // operations), by performing all other operations except this if for the
+    // first line, having this loop start at 1 and then removing the if.
+    //
+    // This would remove a conditional from the hot code path, but increase the
+    // code size of the function.
     if (y != 0) {
+      // Update phase
+      //
+      // For all lines, except the first, the sum vector will need to be updated
+      // with the new pixels value. But as we already have a previous sum for
+      // the last line, we don't need to consider all pixels instead we only
+      // subtract the first pixel of the previous window and add the last pixel
+      // of the current window.
+
+      // The read coordinates need to be clamped to the image size.
       const int prev_y = clamp(y - dy - 1, 0, last_y);
       const int next_y = clamp(y + dy, 0, last_y);
 
@@ -698,25 +795,46 @@ void ImageBlur(Image img, int dx, int dy) {
       }
     }
 
-    int soma = (dx + 1) * line_sum[0];
+    // Blur phase
+    //
+    // Finally the blurred pixel value will be calculated, this is done by first
+    // calculating the sum for the first pixel (by summing the values of
+    // vertical filter inside the horizontal filter window), this will be used
+    // not only for the blurred value of the first pixel but also for
+    // accumulation on subsequent pixels.
+
+    // Here, as when calculating the initial values for the sum vector, we
+    // multiply the first and last pixel values for the part of the filter
+    // window that is out of bounds instead of making multiple clamped reads.
+    // All pixels in the effective memory region are read normally and their
+    // value added to the sum.
+    int sum = (dx + 1) * line_sum[0];
     for (int half_win_x = 1; half_win_x < radius_x; half_win_x++) {
-      soma += line_sum[half_win_x];
+      sum += line_sum[half_win_x];
     }
-    soma += spill_x * line_sum[radius_x];
+    sum += spill_x * line_sum[radius_x];
 
+    // Calculate the blurred value by dividing the sum by the window area and
+    // store it in the blurred pixels memory.
     PIXMEM++; // count one pixel access (write)
-    blurred_pixels[G(img, 0, y)] = round_div(soma, win_area);
+    blurred_pixels[G(img, 0, y)] = round_div(sum, win_area);
 
+    // For all remaining pixels in the line update the sum by removing the first
+    // pixel in the previous filter window and adding the new pixel and. Then
+    // the blurred pixel value is calculated and updated as done previously.
     for (int x = 1; x < img->width; x++) {
       const int prev_x = clamp(x - dx - 1, 0, last_x);
       const int next_x = clamp(x + dx, 0, last_x);
 
-      soma += line_sum[next_x] - line_sum[prev_x];
+      sum += line_sum[next_x] - line_sum[prev_x];
       PIXMEM++; // count one pixel access (write)
-      blurred_pixels[G(img, x, y)] = round_div(soma, win_area);
+      blurred_pixels[G(img, x, y)] = round_div(sum, win_area);
     }
   }
 
+  // At this point blurred_pixels contains the new values and the old pixels
+  // memory is no longer useful so the pointers are swapped and the old pointer
+  // is deallocated.
   uint8 *temp = img->pixel;
   img->pixel = blurred_pixels;
   free(temp);
