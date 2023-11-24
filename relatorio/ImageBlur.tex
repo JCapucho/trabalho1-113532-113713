@@ -35,15 +35,18 @@ Matemáticamente representável como:
 	= (w \cdot h) + (w \cdot h \cdot (2dx + 1) \cdot (2dy + 1))
 \end{align*}
 
-Como o segundo aditivo admite valores muito superiores ao
+Como o segundo aditivo cresce a um ritmo muito superior ao
 primeiro, podemos apenas não considerar o primeiro.
 
 Então obtemos $w\cdot h \cdot (2dx + 1) \cdot (2dy + 1)$
-Se considerarmos \verb|x| e \verb|y| como sendo as dimensões totaisda janela de blur, então $2dx + 1 = x$ e $2dy + 1 = y$,
+Se considerarmos \verb|x| e \verb|y| como sendo as dimensões totais da janela de blur, então $2dx + 1 = x$ e $2dy + 1 = y$,
 pelo que a nossa primeira implementação de ImageBlur obtém
 uma complexidade computacional de $\mathcal{O}(w\cdot h\cdot
 	x\cdot y)$, sendo w e h as dimensões da imagem a desfocar e
 x e y o tamanho da janela utilizada.
+
+Quanto ao pior, melhor e caso médio, estes são iguais, e temos que $B(w,h,x,y) = W(w,h,x,y) = A(w,h,x,y) =
+(w \cdot h) + (w \cdot h \cdot x \cdot y)$
 
 
 

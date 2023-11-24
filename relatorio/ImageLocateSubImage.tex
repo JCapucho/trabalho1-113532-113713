@@ -55,7 +55,6 @@ int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
       const int img1_value = ImageGetPixel(img1, new_x + x, new_y + y);
       const int img2_value = ImageGetPixel(img2, new_x, new_y);
       GREYCMP++;
-      if (img1_value != img2_value) return 0;
     }
   }
   return 1;
@@ -69,16 +68,13 @@ O pior caso da execução pode ser traduzida matemáticamente como
 \end{equation}
 
 O melhor caso será aquele em que o 1º pixel da imagem
-2 é diferente do 1º pixel da imagem 1, que resultará num
+1 é diferente do 1º pixel da imagem 2, que resultará num
 retorno imediato da função. Como tal o melhor caso é tempo
 constante.
 Como tal a análise formal da função resulta em $B(w,h) = 1$
 e $W(w,h) = w \cdot h$, sendo w e h a largura e altura da
 imagem mais pequena.
 
-Para o caso médio podemos considerar ser o caso em que o
-pixel do meio é o primeiro pixel diferente, resultando em
-$A(w,h) = \frac{w}{2} \cdot \frac{h}{2} = \frac{w \cdot h}{4} $
 
 \section{Análise Formal da Função ImageLocateSubImage}
 
@@ -123,18 +119,9 @@ seja, o pior caso para a função ImageMatchSubImage, que já
 calculamos como sendo $w \cdot h$
 
 Como tal, temos que $B(W,H,w,h) = w\cdot h$ e $W(W,H,w,h) = (W-w+1)\cdot(H-h+1)\cdot(w\cdot h)$
-Para calcular o caso médio, podemos assumir que seja aquele
-em que a imagem que procuramos começa no meio da imagem 1,
-pelo que teremos que verificar um total de $\frac{W - w}{2}
-	\cdot \frac{H-h}{2}$ pixeis na imagem 1. Se assumirmos que de
-cada vez decorre o caso médio do ImageMatchSubImage (exceto
-da ultima vez que decorre o pior caso), então o caso médio
-será aproximadamente $A(W,H,w,h) = \frac{W(W,H,w,h)}{8}$
-
 \section[Resultados]{Comparação do resultado obtido em ambas as análises}
 
 Através dos resultados obtidos em \ref{informal_locate},
 concluímos que o número de comparações era dependente da
-resolução de cada imagem e não somente do número de píxeis
-em cada imagem. Após a análise formal podemos concluir que
+resolução de cada imagem e não somente do seu número de píxeis. Após a análise formal podemos concluir que
 essa observação é válida.
