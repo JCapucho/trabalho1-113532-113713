@@ -13,15 +13,18 @@
 \title{O TAD image8bit: Análise de complexidade algorítmica}
 \setcadeira{Algoritmos e Estruturas de Dados}
 
+% Used to allow for includes and chapters to not need a new page
+\usepackage{newclude}
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd{\chapter}{\if@openright\cleardoublepage\else\clearpage\fi}{}{}{}
+\makeatother
+
 \begin{document}
 
 \include{cover}
 
-\begingroup
-\let\clearpage\relax
-\include{ImageLocateSubImage}
-
-\include{ImageBlur}
-\endgroup
+\include*{ImageLocateSubImage}
+\include*{ImageBlur}
 
 \end{document}

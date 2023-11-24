@@ -1,52 +1,66 @@
-\chapter[ImageBlur]{Análise da função ImageBlur}
+\cprotect\chapter{Análise da função \Verb|ImageBlur|}
 
 \section{Primeira Implementação}
-Consideremos uma versão bastante simplificada da função em que apenas consideramos os incrementos a PIXMEM. Consideremos
-\verb|w| e \verb|h| como sendo largura e altura da imagem,
-\verb|dx| o raio horizontal da janela de blur e \verb|dy| o
-raio vertical da janela de blur;
+
+No código \ref{code:blur:first_implementation} é apresentada uma versão simplificada
+da primeira implementação usada para calcular o blur para uma dada imagem,
+destacamos os pontos onde PIXMEM é incrementado visto este ser o alvo da nossa
+análise.
+
 \begin{listing}[H]
 	\centering
 	\begin{minted}{c}
-  // (...) 
   for (int x = 0; x < img->width; x++) {
     for (int y = 0; y < img->height; y++) {
       for (int win_x = -dx; win_x <= dx; win_x++) {
         for (int win_y = -dy; win_y <= dy; win_y++) {
+          // Soma de cada pixel na janela do filtro blur
           PIXMEM++;
         }
       }
+      // Cálculo e armazenamento do valor com blur aplicado
       PIXMEM++;
     }
   }
-  // (...)
-\end{minted}
+  \end{minted}
+	\caption{Visão de alto nível da primeira implementação do blur}
+	\label{code:blur:first_implementation}
 \end{listing}
 
-Matemáticamente representável como:
-\\
-\begin{equation}
-	\sum_{a=0}^{w}\sum_{b=0}^{h} (1 + \sum_{c=-dx}^{dx+1}\sum_{d=-dy}^{dy+1} 1)
-	= \sum_{a=0}^{w}\sum_{b=0}^{h} 1 +
-	\sum_{a=0}^{w}\sum_{b=0}^{h}
-	\sum_{c=-dx}^{dx+1}\sum_{d=-dy}^{dy+1} 1
-\end{equation}
+Na nossa análise vamos considerar $w$ e $h$ como sendo a largura e a altura da
+imagem, respetivamente, e $dx$ o raio horizontal e $dy$ o raio vertical da
+janela de blur.
+
+O número de acessos realizados por esta implementação pode ser representado
+matematicamente pela seguinte expressão:
+
+\begin{align}
+	  & \sum_{x = 0}^{w} \sum_{y = 0}^{h} \left(
+	1 +
+	\sum_{x_{win} = -dx}^{dx+1} \,
+	\sum_{y_{win} = -dy}^{dy+1} 1
+	\right)                                                          \\
+	= & \sum_{x = 0}^{w} \sum_{y = 0}^{h} 1 +
+	\sum_{x = 0}^{w} \sum_{y = 0}^{h} \,
+	\sum_{x_{win} = -dx}^{dx + 1} \, \sum_{y_{win} = -dy}^{dy + 1} 1 \\
+	= & (w \cdot h) + (w \cdot h \cdot (2dx + 1) \cdot (2dy + 1))
+	\label{eq:blur:first_implementation}
+\end{align}
+
+A expressão que obtivemos não depende dos dados da imagem, nem de outros
+fatores além das dimensões da imagem e da janela do filtro, logo vamos ter que o
+melhor caso, o caso médio e o pior caso serão todos iguais.
+
 \begin{align*}
-	= (w \cdot h) + (w \cdot h \cdot (2dx + 1) \cdot (2dy + 1))
+	B(w, h, dx, dy) = W(w, h, dx, dy) & = A(w, h, dx, dy)                                           \\
+	                                  & = (w \cdot h) + (w \cdot h \cdot (2dx + 1) \cdot (2dy + 1))
 \end{align*}
 
-Como o segundo aditivo cresce a um ritmo muito superior ao
-primeiro, podemos apenas não considerar o primeiro.
+Analisando a expressão \eqref{eq:blur:first_implementation}, o segundo termo
+desta cresce a um ritmo superior do que o outro termo presente na mesma, logo
+podemos deduzir que a ordem complexidade associada a este algoritmo é de
+$\mathcal{O}(w \cdot h \cdot 2dx \cdot 2dy)$.
 
-Então obtemos $w\cdot h \cdot (2dx + 1) \cdot (2dy + 1)$
-Se considerarmos \verb|x| e \verb|y| como sendo as dimensões totais da janela de blur, então $2dx + 1 = x$ e $2dy + 1 = y$,
-pelo que a nossa primeira implementação de ImageBlur obtém
-uma complexidade computacional de $\mathcal{O}(w\cdot h\cdot
-	x\cdot y)$, sendo w e h as dimensões da imagem a desfocar e
-x e y o tamanho da janela utilizada.
-
-Quanto ao pior, melhor e caso médio, estes são iguais, e temos que $B(w,h,x,y) = W(w,h,x,y) = A(w,h,x,y) =
-(w \cdot h) + (w \cdot h \cdot x \cdot y)$
 
 
 
