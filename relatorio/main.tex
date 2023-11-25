@@ -1,6 +1,6 @@
 %!TEX encoding = UTF-8 Unicode
 
-\documentclass[code,math]{relatorio-deti}
+\documentclass[code,math,small-chapter]{relatorio-deti}
 
 \setano{2023/2024}
 \title{O TAD image8bit: Análise de complexidade algorítmica}
@@ -8,18 +8,11 @@
 
 \usepackage{lmodern}
 
-% Used to allow for includes and chapters to not need a new page
-\usepackage{newclude}
-\usepackage{etoolbox}
-\makeatletter
-\patchcmd{\chapter}{\if@openright\cleardoublepage\else\clearpage\fi}{}{}{}
-\makeatother
-
 \begin{document}
 
 \include{cover}
 
-\include*{ImageLocateSubImage}
-\include*{ImageBlur}
+\input{ImageLocateSubImage}
+\input{ImageBlur}
 
 \end{document}
