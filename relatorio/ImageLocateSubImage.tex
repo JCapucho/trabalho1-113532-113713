@@ -119,6 +119,22 @@ seja, o pior caso para a função ImageMatchSubImage, que já
 calculamos como sendo $w \cdot h$
 
 Como tal, temos que $B(W,H,w,h) = w\cdot h$ e $W(W,H,w,h) = (W-w+1)\cdot(H-h+1)\cdot(w\cdot h)$
+
+Para a análise do caso médio, temos agora que ter em consideração o \verb|maxval|, ou seja, o valor máximo da
+intensidade de um pixel na imagem. Se considerarmos imagens aleatórias onde a intensidade de cada píxel é equiprovável,
+então a probabilidade de 2 píxeis serem iguais é
+$\frac{1}{maxval + 1}$
+Como a probabilidade de n píxeis seguidos serem iguais corresponde
+a $(\frac{1}{maxval + 1})^n$, este valor rápidamente tende
+para 0, pelo que podemos concluir que o número de
+comparações efetuado será relativamente pequeno. Se
+considerarmos que temos que comparar 10\% dos pixeis, então
+o caso médio do ImageMatch ficará $A(w,h)= \frac{w
+\cdot h}{10}$. Para o caso médio do ImageLocateSubImage, podemos
+assumir que a sub-imagem é encontrada aproximadamente a
+meio, sendo entao $A(W,H,w,h)=(W-w)\cdot\frac{(H-h)}{2} \cdot
+\frac{w\cdot h}{10}$
+
 \section[Resultados]{Comparação do resultado obtido em ambas as análises}
 
 Através dos resultados obtidos em \ref{informal_locate},
