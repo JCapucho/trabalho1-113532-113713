@@ -1,143 +1,116 @@
 \renewcommand{\listingscaption}{Caso em estudo:}
 
-\chapter[ImageLocateSubImage]{Análise da Função ImageLocateSubImage}
-A primeira das funções a analisar é a ImageLocateSubImage. Iremos analisar o número de comparações efetuadas envolvendo
-o valor de cinzento entre pixeis das imagens. Para começar, iremos realizar uma análise informal, realizando vários
-testes e registando o número de comparações. De seguida, iremos analisar formalmente o algorítmo utilizado e comparar
-com o resultado obtido pela análise informal.
+\cprotect\chapter{Análise da Função \Verb|ImageLocateSubImage|}
 
-\section[Análise informal]{Análise Informal da Função ImageLocateSubImage
-  \label{informal_locate}}
-Para a realização de uma análise informal, é necessário que a cada utilização da função registemos o número de
-comparações realizadas entre valores de cinzento entre pixeis. Para tal podemos guardar valores no array global
-InstrCount. No final da execução, temos que imprimir para a consola ou para um ficheiro o valor guardado.
+A primeira função a analisar é a \Verb|ImageLocateSubImage|, mais
+especificamente, o número de comparações efetuadas entre os valores de
+cinzento dos pixeis das duas imagens. Para começar, iremos realizar uma análise
+informal, realizando vários testes e registando o número de comparações.
+De seguida, iremos analisar formalmente o algoritmo utilizado.
 
-Podemos então depois de executar alguns testes, comparar resultados. Consideremos então os testes realizados com 2
-imagens (1 e 2). Nos testes, iremos verificar se a imagem 1
-contém a imagem 2. Consideremos então \verb|H| e \verb|W|
-como sendo a altura e
-largura da imagem 1 (respetivamente), e \verb|h| e \verb|w|
-como sendo a altura e largura da figura 2.
+\section{Análise Informal da Função ImageLocateSubImage}
 
-Observemos os seguintes resultados:
+Para a realização da análise informal procuramos, para cada invocação
+da função, obter o número de comparações realizadas entre os valores de
+cinzento dos pixeis. Para tal utilizamos as ferramentas de instrumentação que
+nos foram disponibilizadas, sendo destacados os comandos \Verb|tic| e \Verb|toc|.
+
+Vamos então considerar testes realizados com 2 imagens (1 e 2). Nos testes,
+iremos verificar se a imagem 1 contém a imagem 2.
+
+Dos resultados obtidos destacam-se os seguintes:
+
 \begin{listing}[H]
 	\centering
-	Image1: 20 x 40;	Image2: 2 x 16;	Number of grey comparisons: 15200;
-
-	Image1: 20 x 40;	Image2: 16 x 2;	Number of grey comparisons: 6240;
-	\caption{Resultados para imagens de igual área e resolução
-		diferente}
-	\label{eq_area_diff_res}
+	\begin{minted}{text}
+	Image1: 20 x 40; Image2: 2 x 16; Number of grey comparisons: 15200;
+	Image1: 20 x 40; Image2: 16 x 2; Number of grey comparisons: 6240;
+  \end{minted}
+	\caption{Resultados para imagens de igual área e resolução diferente}
 \end{listing}
 
-Por estes resultados, podemos concluir que o número de
-comparações efetuadas não depende da área das imagens, uma
-vez que no \textbf{caso em estudo \ref{eq_area_diff_res}} as
-imagens têm a mesma área, mas número de comparações efetuadas
-diferente. Deste modo, a função complexidade dependerá sempre das
-largura e altura de ambas as imagens e não apenas do número
-de píxeis em cada imagem.
+Estes permitem-nos concluir que o número de comparações efetuadas não depende só
+da área das imagens, uma vez que as imagens têm a mesma área, mas o número de
+comparações efetuadas é diferente. Deste modo, a função complexidade dependerá
+da largura e altura das imagens e não apenas do número de pixeis de cada imagem.
 
 \section{Análise Formal da Função ImageMatchSubImage}
 \renewcommand{\listingscaption}{Código:}
-Uma vez que a nossa função ImageLocateSubImage chama a
-função ImageMatchSubImage, comecemos por analisar esta.
+A função \Verb|ImageLocateSubImage|, que implementamos, invoca a função
+\Verb|ImageMatchSubImage|, por isso vamos começar por fazer uma breve análise
+desta.
 
-A função consiste na realização de dois \verb|for loops|
-encadeados:
 \begin{listing}[H]
 	\centering
 	\begin{minted}{c}
-int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
-  // (...)
-  for (int new_x = 0; new_x < img2->width; new_x++) {
-    for (int new_y = 0; new_y < img2->height; new_y++) {
-      const int img1_value = ImageGetPixel(img1, new_x + x, new_y + y);
-      const int img2_value = ImageGetPixel(img2, new_x, new_y);
-      GREYCMP++;
-    }
+  FOR_COORDINATES(img2, x, y) {
+    if (img1_value != img2_value)
+      return 0;
   }
   return 1;
-\end{minted}
+  \end{minted}
 	\caption{Implementação da função ImageMatchSubImage}
+	\label{code:locate:ImageMatchSubImage}
 \end{listing}
 
-O pior caso da execução pode ser traduzida matemáticamente como
+Como podemos ver pelo código \ref{code:locate:ImageMatchSubImage}, a função
+consiste na iteração da imagem que estamos a procura, onde em cada iteração
+comparamos com o pixel correspondente da imagem onde estamos a procurar.
+
+Consideremos \verb|H| e \verb|W| como sendo a altura e largura, respetivamente,
+da imagem onde vamos procurar, e \verb|h| e \verb|w| como sendo a altura e
+largura da imagem que estamos a procura. Podemos então traduzir o pior caso da
+execução na seguinte expressão matemática:
+
 \begin{equation}
-	\sum_{a=0}^{w}\sum_{b=0}^{h}1 = w \cdot h
+	W(w,h) = \sum_{x = 0}^{w - 1} \sum_{y = 0}^{h -1} 1 = w \cdot h
 \end{equation}
 
-O melhor caso será aquele em que o 1º pixel da imagem
-1 é diferente do 1º pixel da imagem 2, que resultará num
-retorno imediato da função. Como tal o melhor caso é tempo
-constante.
-Como tal a análise formal da função resulta em $B(w,h) = 1$
-e $W(w,h) = w \cdot h$, sendo w e h a largura e altura da
-imagem mais pequena.
+O melhor caso será aquele em que o 1º pixel da imagem onde estamos a procurar é
+diferente do 1º pixel da imagem que estamos a procura, pois isto resulta num
+retorno imediato da função. Como tal o melhor caso é $B(w,h) = 1$.
 
 
 \section{Análise Formal da Função ImageLocateSubImage}
 
-Para a análise formal da função em estudo, podemos apenas
-apoiar-nos na análise já efetuada para a função
-ImageMatchSubImage.
-
-ImageLocateSubImage consiste também ela num encadeamento de
-\verb|for-loops|, pelo que a análise efetuada será
-semelhante.
+\Verb|ImageLocateSubImage| consiste também ela na iteração da imagem, mas desta
+vez apenas pela diferença de tamanhos das duas imagens.
 
 \begin{listing}[H]
 	\centering
 	\begin{minted}{c}
-int ImageLocateSubImage(Image img1, int *px, int *py, Image img2) {
-    // (...)
-  for (int x = 0; x <= img1->width - img2->width; x++) {
-    for (int y = 0; y <= img1->height - img2->height; y++) {
-      if (ImageMatchSubImage(img1, x, y, img2)) {
-        *px = x;
-        *py = y;
-        return 1;
-      }
-    }
+  const int check_width = img1->width - img2->width;
+  const int check_height = img1->height - img2->height;
+  FOR_COORDINATES_SIZED(x, y, check_width, check_height) {
+    if (ImageMatchSubImage(img1, x, y, img2))
+      return 1;
   }
   return 0;
-}
   \end{minted}
 \end{listing}
 
-Uma vez mais, o pior caso será a realização de ambos os
-\verb|for loops| na sua totalidade. Como tal, podemos
-uma vez mais traduzir matemáticamente a expressão:
+Uma vez mais, o pior caso será a iteração de todos os pixeis na sua totalidade,
+obtendo assim a seguinte expressão:
 
 \begin{equation}
-	\sum_{a=0}^{W-w+1}\sum_{b=0}^{H-h+1}w\cdot h = (W-w+1)\cdot(H-h+1)\cdot(w\cdot h)
+	W(W,H,w,h) = \sum_{x = 0}^{W-w+1} \, \sum_{y = 0}^{H-h+1}w\cdot h = (W-w+1)\cdot(H-h+1)\cdot(w\cdot h)
 \end{equation}
 
-Importante notar que nesta função, o seu melhor caso será
-aquele em que a função ImageMatchSubImage retorne 1, ou
-seja, o pior caso para a função ImageMatchSubImage, que já
-calculamos como sendo $w \cdot h$
+Importante realçar que nesta função, o seu melhor caso será aquele em que a
+função \Verb|ImageMatchSubImage| retorne 1, ou seja, o pior caso para a função
+\Verb|ImageMatchSubImage|, que já calculamos como sendo $w \cdot h$. Como tal,
+temos que $B(W,H,w,h) = w\cdot h$.
 
-Como tal, temos que $B(W,H,w,h) = w\cdot h$ e $W(W,H,w,h) = (W-w+1)\cdot(H-h+1)\cdot(w\cdot h)$
+Para a análise do caso médio, temos agora que ter em consideração o valor máximo
+de intensidade de um pixel na imagem, $maxval$.
+Se considerarmos imagens aleatórias onde a intensidade de cada pixel é
+equiprovável, então a probabilidade de 2 pixeis serem iguais é
+$\frac{1}{maxval + 1}$.
+Como a probabilidade de n pixeis seguidos serem iguais corresponde a
+$(\frac{1}{maxval + 1})^n$, este valor rapidamente tende para 0.
 
-Para a análise do caso médio, temos agora que ter em consideração o \verb|maxval|, ou seja, o valor máximo da
-intensidade de um pixel na imagem. Se considerarmos imagens aleatórias onde a intensidade de cada píxel é equiprovável,
-então a probabilidade de 2 píxeis serem iguais é
-$\frac{1}{maxval + 1}$
-Como a probabilidade de n píxeis seguidos serem iguais corresponde
-a $(\frac{1}{maxval + 1})^n$, este valor rápidamente tende
-para 0, pelo que podemos concluir que o número de
-comparações efetuado será relativamente pequeno. Se
-considerarmos que temos que comparar 10\% dos pixeis, então
-o caso médio do ImageMatch ficará $A(w,h)= \frac{w
-\cdot h}{10}$. Para o caso médio do ImageLocateSubImage, podemos
-assumir que a sub-imagem é encontrada aproximadamente a
-meio, sendo entao $A(W,H,w,h)=(W-w)\cdot\frac{(H-h)}{2} \cdot
-\frac{w\cdot h}{10}$
-
-\section[Resultados]{Comparação do resultado obtido em ambas as análises}
-
-Através dos resultados obtidos em \ref{informal_locate},
-concluímos que o número de comparações era dependente da
-resolução de cada imagem e não somente do seu número de píxeis. Após a análise formal podemos concluir que
-essa observação é válida.
+Se considerarmos que temos que comparar 10\% dos pixeis, então o caso médio do
+\Verb|ImageMatchSubImage| ficará $A(w,h)= \frac{w \cdot h}{10}$.
+Para o caso médio do \Verb|ImageLocateSubImage|, podemos assumir que a
+sub-imagem é encontrada aproximadamente a meio, sendo então
+$A(W,H,w,h)=(W-w)\cdot\frac{(H-h)}{2} \cdot \frac{w\cdot h}{10}$.
