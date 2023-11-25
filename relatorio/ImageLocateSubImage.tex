@@ -1,6 +1,6 @@
 \renewcommand{\listingscaption}{Caso em estudo:}
 
-\cprotect\chapter{Análise da Função \Verb|ImageLocateSubImage|}
+\chapter{Análise da Função \VerbSection{ImageLocateSubImage}}
 
 A primeira função a analisar é a \Verb|ImageLocateSubImage|, mais
 especificamente, o número de comparações efetuadas entre os valores de
@@ -8,7 +8,7 @@ cinzento dos pixeis das duas imagens. Para começar, iremos realizar uma anális
 informal, realizando vários testes e registando o número de comparações.
 De seguida, iremos analisar formalmente o algoritmo utilizado.
 
-\section{Análise Informal da Função ImageLocateSubImage}
+\section{Análise Informal da Função \VerbSection{ImageLocateSubImage}}
 
 Para a realização da análise informal procuramos, para cada invocação
 da função, obter o número de comparações realizadas entre os valores de
@@ -34,7 +34,7 @@ da área das imagens, uma vez que as imagens têm a mesma área, mas o número d
 comparações efetuadas é diferente. Deste modo, a função complexidade dependerá
 da largura e altura das imagens e não apenas do número de pixeis de cada imagem.
 
-\section{Análise Formal da Função ImageMatchSubImage}
+\section{Análise Formal da Função \VerbSection{ImageMatchSubImage}}
 \renewcommand{\listingscaption}{Código:}
 A função \Verb|ImageLocateSubImage|, que implementamos, invoca a função
 \Verb|ImageMatchSubImage|, por isso vamos começar por fazer uma breve análise
@@ -71,7 +71,7 @@ diferente do 1º pixel da imagem que estamos a procura, pois isto resulta num
 retorno imediato da função. Como tal o melhor caso é $B(w,h) = 1$.
 
 
-\section{Análise Formal da Função ImageLocateSubImage}
+\section{Análise Formal da Função \VerbSection{ImageLocateSubImage}}
 
 \Verb|ImageLocateSubImage| consiste também ela na iteração da imagem, mas desta
 vez apenas pela diferença de tamanhos das duas imagens.

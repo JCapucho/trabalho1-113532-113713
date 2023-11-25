@@ -121,6 +121,9 @@
 
 %%%  END CUSTOM HEADER
 
+\newcommand{\VerbSection}[1]{%
+	\texorpdfstring{\protect\Verb|#1|}{#1}}
+
 %%% START CUSTOM ENVIRONMENTS
 
 % Defines an enumerated description list
