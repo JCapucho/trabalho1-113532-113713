@@ -2,10 +2,8 @@
 
 \section{Primeira Implementação}
 
-No código \ref{code:blur:first_implementation} é apresentada uma versão simplificada
-da primeira implementação usada para calcular o blur para uma dada imagem,
-destacamos os pontos onde PIXMEM é incrementado visto este ser o alvo da nossa
-análise.
+No código abaixo é apresentada uma versão simplificada da primeira implementação
+que apenas mostra onde \Verb|PIXMEM| é atualizado.
 
 \begin{listing}[H]
 	\centering
@@ -23,45 +21,134 @@ análise.
     }
   }
   \end{minted}
-	\caption{Visão de alto nível da primeira implementação do blur}
-	\label{code:blur:first_implementation}
 \end{listing}
 
-Na nossa análise vamos considerar $w$ e $h$ como sendo a largura e a altura da
-imagem, respetivamente, e $dx$ o raio horizontal e $dy$ o raio vertical da
-janela de blur.
+Consideremos $w$ e $h$ como sendo a largura e a altura da imagem, e $dx$
+o raio horizontal e $dy$ o raio vertical da janela de blur.
 
 O número de acessos realizados por esta implementação pode ser representado
 matematicamente pela seguinte expressão:
 
 \begin{align}
-	  & \sum_{x = 0}^{w} \sum_{y = 0}^{h} \left(
+	  & \sum_{x = 0}^{w - 1} \sum_{y = 0}^{h - 1} \left(
 	1 +
 	\sum_{x_{win} = -dx}^{dx+1} \,
 	\sum_{y_{win} = -dy}^{dy+1} 1
 	\right)                                                          \\
-	= & \sum_{x = 0}^{w} \sum_{y = 0}^{h} 1 +
-	\sum_{x = 0}^{w} \sum_{y = 0}^{h} \,
+	= & \sum_{x = 0}^{w - 1} \sum_{y = 0}^{h - 1} 1 +
+	\sum_{x = 0}^{w - 1} \sum_{y = 0}^{h - 1} \,
 	\sum_{x_{win} = -dx}^{dx + 1} \, \sum_{y_{win} = -dy}^{dy + 1} 1 \\
 	= & (w \cdot h) + (w \cdot h \cdot (2dx + 1) \cdot (2dy + 1))
 	\label{eq:blur:first_implementation}
 \end{align}
 
-A expressão que obtivemos não depende dos dados da imagem, nem de outros
+A expressão que obtivemos não depende dos valores dos pixeis, nem de outros
 fatores além das dimensões da imagem e da janela do filtro, logo vamos ter que o
 melhor caso, o caso médio e o pior caso serão todos iguais.
 
-\begin{align*}
-	B(w, h, dx, dy) = W(w, h, dx, dy) & = A(w, h, dx, dy)                                           \\
-	                                  & = (w \cdot h) + (w \cdot h \cdot (2dx + 1) \cdot (2dy + 1))
-\end{align*}
-
 Analisando a expressão \eqref{eq:blur:first_implementation}, o segundo termo
 desta cresce a um ritmo superior do que o outro termo presente na mesma, logo
-podemos deduzir que a ordem complexidade associada a este algoritmo é de
+podemos deduzir que a ordem de complexidade associada a este algoritmo é de
 $\mathcal{O}(w \cdot h \cdot 2dx \cdot 2dy)$.
 
-
-
-
 \section{Segunda Implementação}
+
+A visão simplificada da segunda implementação é apresentada no código seguinte.
+
+\begin{listing}[H]
+	\centering
+	\begin{minted}{c}
+  // Inicialização vetor soma
+  for (int x = 0; x < img->width; x++) {
+    PIXMEM++;
+    for (int win_y = 1; win_y < radius_y; win_y++) {
+      PIXMEM++;
+    }
+    PIXMEM++;
+  }
+
+  for (int y = 0; y < img->height; y++) {
+    if (y != 0) {
+      // Atualização do vetor soma
+      for (int x = 0; x < img->width; x++) {
+        PIXMEM += 2;
+      }
+    }
+
+    // Cálculo do blur para o pixel (0, y)
+    PIXMEM++;
+
+    for (int x = 1; x < img->width; x++) {
+      // Cálculo do blur para o pixel (x, y)
+      PIXMEM++;
+    }
+  }
+  \end{minted}
+\end{listing}
+
+\Verb|radius_x| é igual a $dx$ ou $w$, o que for menor (o mesmo acontece para
+\Verb|radius_y| com $dy$ e $h$). Vamos assumir na nossa análise que $dx < w$ e
+$dy < h$.
+
+Logo obtemos a seguinte expressão:
+
+\begin{align}
+	  & \sum_{x = 0}^{w - 1} \left[
+		1
+		+ \left(\sum_{y_{win} = 1}^{dy - 1} 1\right)
+		+ 1
+		\right]
+	+ \sum_{y = 0}^{h - 1} \left( 1 + \sum_{x = 1}^{w - 1} 1 \right)
+	+ \sum_{y = 1}^{h - 1} \sum_{x = 0}^{w - 1} 2                  \\
+	= & \left( w + w \cdot (dy - 1) + w \right)
+	+ \left( h + h \cdot (w - 1) \right)
+	+ 2(h - 1) \cdot w                                             \\
+	= & w \cdot (dy + 1) + h \cdot w + 2(h - 1) \cdot w            \\
+	= & w \cdot dy + w + h \cdot w + 2 \cdot h \cdot w - 2 \cdot w \\
+	= & 3 \cdot h \cdot w + w \cdot dy - w
+	\label{eq:blur:second_implementation}
+\end{align}
+
+Mais uma vez temos que o melhor caso, o caso médio e o pior caso são iguais
+
+E observando a expressão \eqref{eq:blur:second_implementation}, o termo
+$3 \cdot h \cdot w$ cresce mais rapidamente que os restantes a medida que os
+parâmetros aumentam, logo podemos concluir que a ordem de complexidade é de
+$\mathcal{O}(3 \cdot h \cdot w)$.
+
+\section{Comparação de resultados}
+
+\begin{table}[H]
+	\centering
+	\begin{tabular}{ |l||c|c||c|c||c|c|  }
+		\hline
+		\multirow{2}{*}{Versão}                 & \multicolumn{2}{c||}{Tamanho imagem} & \multicolumn{2}{c||}{Raio do filtro} & \multirow{2}{*}{Pixeis lidos} & \multirow{2}{*}{Divisões}                    \\
+		\cline{2-5}
+		                                        & largura                              & altura                               & horizontal                    & vertical                  &          &       \\
+		\hline
+		\multirow{6}{*}{Primeira implementação} & 8                                    & 8                                    & 1                             & 1                         & 640      & 64    \\
+		\cline{2-7}
+		                                        & 8                                    & 8                                    & 3                             & 3                         & 3200     & 64    \\
+		\cline{2-7}
+		                                        & 100                                  & 100                                  & 5                             & 5                         & 1220000  & 10000 \\
+		\cline{2-7}
+		                                        & 100                                  & 100                                  & 10                            & 10                        & 4420000  & 10000 \\
+		\cline{2-7}
+		                                        & 300                                  & 300                                  & 7                             & 7                         & 20340000 & 90000 \\
+		\cline{2-7}
+		                                        & 300                                  & 300                                  & 15                            & 15                        & 86580000 & 90000 \\
+		\hline
+		\multirow{6}{*}{Segunda implementação}  & 8                                    & 8                                    & 1                             & 1                         & 192      & 64    \\
+		\cline{2-7}
+		                                        & 8                                    & 8                                    & 3                             & 3                         & 208      & 64    \\
+		\cline{2-7}
+		                                        & 100                                  & 100                                  & 5                             & 5                         & 30400    & 10000 \\
+		\cline{2-7}
+		                                        & 100                                  & 100                                  & 10                            & 10                        & 30900    & 10000 \\
+		\cline{2-7}
+		                                        & 300                                  & 300                                  & 7                             & 7                         & 271800   & 90000 \\
+		\cline{2-7}
+		                                        & 300                                  & 300                                  & 15                            & 15                        & 274200   & 90000 \\
+		\hline
+	\end{tabular}
+\end{table}
