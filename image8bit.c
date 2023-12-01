@@ -387,7 +387,7 @@ int ImageValidRect(Image img, int x, int y, int w, int h) { ///
   // Subtract the dimensions instead of adding the dimension and the offset,
   // this prevents the value from potentially overflowing, since the dimensions
   // are always positive their subtraction will never underflow.
-  return img->width - w > x && img->height - h > y;
+  return img->width - w >= x && img->height - h >= y;
 }
 
 /// Pixel get & set operations
@@ -668,7 +668,7 @@ int ImageLocateSubImage(Image img1, int *px, int *py, Image img2) { ///
   const int check_width = img1->width - img2->width;
   const int check_height = img1->height - img2->height;
 
-  FOR_COORDINATES_SIZED(x, y, check_width, check_height) {
+  FOR_COORDINATES_SIZED(x, y, check_width + 1, check_height + 1) {
     if (ImageMatchSubImage(img1, x, y, img2)) {
       *px = x;
       *py = y;
