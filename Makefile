@@ -5,14 +5,16 @@
 # make clean        # to cleanup object files and executables
 # make cleanobj     # to cleanup object files only
 
-CFLAGS = -Wall -O2 -g
+CFLAGS = -Wall -Wextra -Wpedantic -O3 -g
 
-PROGS = imageTool imageTest
+PROGS = imageTool imageTest benchmark
 
 TESTS = test1 test2 test3 test4 test5 test6 test7 test8 test9
 
 # Default rule: make all programs
 all: $(PROGS)
+
+benchmark: benchmark.o image8bit.o instrumentation.o error.o
 
 imageTest: imageTest.o image8bit.o instrumentation.o error.o
 
@@ -75,7 +77,7 @@ test8: $(PROGS) setup
 	cmp blend.pgm test/blend.pgm
 
 test9: $(PROGS) setup
-	$(IMAGE_TOOL_RUN) test/original.pgm blur 7,7 save blur.pgm
+	$(IMAGE_TOOL_RUN) test/original.pgm tic blur 7,7 toc save blur.pgm
 	cmp blur.pgm test/blur.pgm
 
 # Custom Tests

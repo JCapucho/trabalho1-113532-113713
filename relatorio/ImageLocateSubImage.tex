@@ -96,8 +96,12 @@ obtendo assim a seguinte expressão:
 	W(W,H,w,h) = \sum_{x = 0}^{W-w+1} \, \sum_{y = 0}^{H-h+1}w\cdot h = (W-w+1)\cdot(H-h+1)\cdot(w\cdot h)
 \end{equation}
 
-Importante realçar que nesta função, o seu melhor caso será aquele em que a
-função \Verb|ImageMatchSubImage| retorne 1, ou seja, o pior caso para a função
+Importante realçar que nesta função, o melhor caso varia de acordo com a
+diferença entre as duas imagens. Se $(W - w) \cdot (H - h) < w \cdot h$ o melhor
+caso é quando todas as comparações falham no primeiro pixel, logo
+$B(W,H,w,h) = (W - w) \cdot (H - h)$.
+Caso contrário, o melhor caso implica que a imagem seja encontrada no canto
+superior direito, o que corresponde ao pior caso para a função
 \Verb|ImageMatchSubImage|, que já calculamos como sendo $w \cdot h$. Como tal,
 temos que $B(W,H,w,h) = w\cdot h$.
 

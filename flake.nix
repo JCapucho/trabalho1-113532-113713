@@ -22,6 +22,8 @@
           bear
           valgrind
           clang-tools
+
+          (pkgs.python3.withPackages (ps: with ps; [pillow]))
         ];
       };
     });
